@@ -39,9 +39,18 @@ typedef struct {
 
 dir_entry dir[128];
 
+/* Constantes de Agrupamentos */
+
+#define AGRUP_LIVRE 1
+#define AGRUP_ULTIMO 2
+#define AGRUP_FAT 3
+#define AGRUP_DIR 4
+
 
 int fs_init() {
+
   printf("Função não implementada: fs_init\n");
+
   return 1;
 }
 
