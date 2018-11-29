@@ -45,17 +45,87 @@ dir_entry dir[128];
 #define AGRUP_ULTIMO 2
 #define AGRUP_FAT 3
 #define AGRUP_DIR 4
+#define SIZE_FAT 65536
 
 
 int fs_init() {
+  //Carregando FAT
+  for(int cluster = 0; cluster < 32; cluster++)
+  {
+      for(int sector = 0; sector < 8; sector++)
+      {
+        char buffer[SECTORSIZE];
+        bl_read((cluster*8 + sector), buffer);
+        bytencpy((char *) fat, buffer, SECTORSIZE);
+      }
+  }
 
-  printf("Função não implementada: fs_init\n");
+  //Verficando integridade
+  for(int i = 0; i < 32; i++)
+  {
+    if(fat[i] != AGRUP_FAT)
+    {
+      return 0;
+    }
+  }
+  if(fat[32] != AGRUP_DIR)
+  {
+    return 0;
+  }
+
+  //Carregando Diretório
+      for(int sector = 0; sector < 8; sector++)
+      {
+        char buffer[SECTORSIZE];
+        bl_read(sector + 256, buffer);
+        bytencpy((char *) dir, buffer, SECTORSIZE);
+      }
 
   return 1;
 }
 
 int fs_format() {
-  printf("Função não implementada: fs_format\n");
+
+  //Inicializando estruturas em RAM
+  //FAT
+  for(int i = 0; i < 32; i++)
+  {
+    fat[i] = AGRUP_FAT;
+  }  
+  fat[32] = AGRUP_DIR;
+  for(int i = 33; i < SIZE_FAT; i++)
+  {
+    fat[i] = AGRUP_LIVRE;
+  }
+
+  //Diretório
+  for(int i = 0; i < 128; i++)
+  {
+    dir[i].used = 'F';
+    dir[i].name[0] = '\0';
+  }
+
+  //Escrevendo no arquivo
+  //FAT
+  for(int cluster = 0; cluster < 32; cluster++)
+  {
+    for(int sector = 0; sector < 8; sector++)
+    {
+      char buffer[SECTORSIZE];
+      bytencpy(buffer, (char *) fat, SECTORSIZE);
+      bl_write((cluster*8 + sector), buffer);
+    }
+  }
+
+  //Diretório
+  for(int sector = 0; sector < 8; sector++)
+  {
+    char buffer[SECTORSIZE];
+    bytencpy(buffer, (char *) dir, SECTORSIZE);
+    bl_write(sector + 256, buffer);
+    
+  }
+
   return 0;
 }
 
@@ -99,3 +169,7 @@ int fs_read(char *buffer, int size, int file) {
   return -1;
 }
 
+void bytencpy(char * Destino, char * Origem, int Tamanho)
+{
+  strncpy(Destino, Origem, Tamanho);
+}
