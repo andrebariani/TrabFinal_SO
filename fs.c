@@ -52,6 +52,7 @@ dir_entry dir[128];
 void bytencpy(char *Destino, char *Origem, int Tamanho);
 
 int fs_init() {
+
   //Carregando FAT
   for(int cluster = 0; cluster < 32; cluster++)
   {
@@ -68,21 +69,21 @@ int fs_init() {
   {
     if(fat[i] != AGRUP_FAT)
     {
-      return 0;
+      return 1;
     }
   }
   if(fat[32] != AGRUP_DIR)
   {
-    return 0;
+    return 1;
   }
 
   //Carregando Diretório
-      for(int sector = 0; sector < 8; sector++)
-      {
-        char buffer[SECTORSIZE];
-        bl_read(sector + 256, buffer);
-        bytencpy((char *) dir, buffer, SECTORSIZE);
-      }
+  for(int sector = 0; sector < 8; sector++)
+  {
+    char buffer[SECTORSIZE];
+    bl_read(sector + 256, buffer);
+    bytencpy((char *) dir, buffer, SECTORSIZE);
+  }
 
   return 1;
 }
@@ -129,25 +130,25 @@ int fs_format() {
 
   }
 
-  return 0;
+  return 1;
 }
 
 int fs_free() {
   /*------------DUVIDA------------*/
   /*Temos que carregar a fat aqui?*/
-  int agrupLivres = 0;
+  int agrupOcup = 0;
 
   //Contando os empaços livres da FAT
   for (int i = 0; i < SIZE_FAT; i++)
   {
-    if(fat[i] == AGRUP_LIVRE)
+    if(fat[i] != AGRUP_LIVRE)
     {
-      agrupLivres++;
+      agrupOcup++;
     }
   }
 
   //Multiplicando para tranformar os clusters em bytes
-  return agrupLivres * CLUSTERSIZE;
+  return bl_size(   )-(agrupOcup * CLUSTERSIZE);
 }
 
 int fs_list(char *buffer, int size) {
