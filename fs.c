@@ -46,7 +46,10 @@ dir_entry dir[128];
 #define AGRUP_FAT 3
 #define AGRUP_DIR 4
 #define SIZE_FAT 65536
+#define SIZE_DIR 128
 
+/* Funções auxiliaes */
+void bytencpy(char *Destino, char *Origem, int Tamanho);
 
 int fs_init() {
   //Carregando FAT
@@ -91,7 +94,7 @@ int fs_format() {
   for(int i = 0; i < 32; i++)
   {
     fat[i] = AGRUP_FAT;
-  }  
+  }
   fat[32] = AGRUP_DIR;
   for(int i = 33; i < SIZE_FAT; i++)
   {
@@ -123,20 +126,44 @@ int fs_format() {
     char buffer[SECTORSIZE];
     bytencpy(buffer, (char *) dir, SECTORSIZE);
     bl_write(sector + 256, buffer);
-    
+
   }
 
   return 0;
 }
 
 int fs_free() {
-  printf("Função não implementada: fs_free\n");
-  return 0;
+  /*------------DUVIDA------------*/
+  /*Temos que carregar a fat aqui?*/
+  int agrupLivres = 0;
+
+  //Contando os empaços livres da FAT
+  for (int i = 0; i < SIZE_FAT; i++)
+  {
+    if(fat[i] == AGRUP_LIVRE)
+    {
+      agrupLivres++;
+    }
+  }
+
+  //Multiplicando para tranformar os clusters em bytes
+  return agrupLivres * CLUSTERSIZE;
 }
 
 int fs_list(char *buffer, int size) {
-  printf("Função não implementada: fs_list\n");
-  return 0;
+  buffer[0] = '\0';
+  char aux[31];
+
+  for (int i = 0; i < SIZE_DIR; i++)
+  {
+    if(dir[i].used != 'F')
+    {
+      sprintf(aux, "%s\t\t%d\n", dir[i].name, dir[i].size);
+      strcpy( &( buffer[strlen(buffer)] ), aux);
+    }
+  }
+
+  return 1;
 }
 
 int fs_create(char* file_name) {
