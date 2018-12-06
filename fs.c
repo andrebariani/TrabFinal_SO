@@ -49,7 +49,6 @@ dir_entry dir[128];
 #define SIZE_DIR 128
 
 /* Funções auxiliaes */
-void bytencpy(char *Destino, char *Origem, int Tamanho);
 
 int fs_init() {
 
@@ -60,7 +59,7 @@ int fs_init() {
       {
         char buffer[SECTORSIZE];
         bl_read((cluster*8 + sector), buffer);
-        bytencpy((char *) fat, buffer, SECTORSIZE);
+        memcpy((char *) fat, buffer, SECTORSIZE);
       }
   }
 
@@ -82,7 +81,7 @@ int fs_init() {
   {
     char buffer[SECTORSIZE];
     bl_read(sector + 256, buffer);
-    bytencpy((char *) dir, buffer, SECTORSIZE);
+    memcpy((char *) dir, buffer, SECTORSIZE);
   }
 
   return 1;
@@ -116,7 +115,7 @@ int fs_format() {
     for(int sector = 0; sector < 8; sector++)
     {
       char buffer[SECTORSIZE];
-      bytencpy(buffer, (char *) fat, SECTORSIZE);
+      memcpy(buffer, (char *) fat, SECTORSIZE);
       bl_write((cluster*8 + sector), buffer);
     }
   }
@@ -125,7 +124,7 @@ int fs_format() {
   for(int sector = 0; sector < 8; sector++)
   {
     char buffer[SECTORSIZE];
-    bytencpy(buffer, (char *) dir, SECTORSIZE);
+    memcpy(buffer, (char *) dir, SECTORSIZE);
     bl_write(sector + 256, buffer);
 
   }
@@ -195,9 +194,4 @@ int fs_write(char *buffer, int size, int file) {
 int fs_read(char *buffer, int size, int file) {
   printf("Função não implementada: fs_read\n");
   return -1;
-}
-
-void bytencpy(char * Destino, char * Origem, int Tamanho)
-{
-  strncpy(Destino, Origem, Tamanho);
 }
