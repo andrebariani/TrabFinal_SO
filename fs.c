@@ -51,23 +51,21 @@ dir_entry dir[128];
 /* Funções auxiliaes */
 
 int fs_init() {
-
   //Carregando FAT
-  for(int cluster = 0; cluster < 32; cluster++)
+  for(int agrupamento = 0; agrupamento < 32; agrupamento++)
   {
       for(int sector = 0; sector < 8; sector++)
       {
         char buffer[SECTORSIZE];
-        if(!bl_read((cluster*8 + sector), buffer))
+        if(!bl_read((agrupamento*8 + sector), buffer))
         {
             printf("Erro no carregamento da FAT. Disco nao esta formatado!\n");
             return 0;
         }
-
-        memcpy(&fat[(cluster*8)+sector], buffer, SECTORSIZE);
+        printf("%d\t%d\n", agrupamento, sector);
+        memcpy(fat+(agrupamento*8+sector)*SECTORSIZE, buffer, SECTORSIZE);
       }
   }
-
   //Verficando integridade
   for(int i = 0; i < 32; i++)
   {
@@ -121,13 +119,13 @@ int fs_format() {
 
   //Escrevendo no arquivo
   //FAT
-  for(int cluster = 0; cluster < 32; cluster++)
+  for(int agrupamento = 0; agrupamento < 32; agrupamento++)
   {
     for(int sector = 0; sector < 8; sector++)
     {
       char buffer[SECTORSIZE];
-      memcpy(buffer, &fat[(cluster*8)+sector], SECTORSIZE);
-      bl_write((cluster*8 + sector), buffer);
+      memcpy(buffer, fat+(agrupamento*8*SECTORSIZE)+sector*SECTORSIZE, SECTORSIZE);
+      bl_write((agrupamento*8 + sector), buffer);
     }
   }
 
@@ -145,13 +143,26 @@ int fs_format() {
 
 int fs_free() {
   int agrupOcup = 0;
-
-  //Contando os empaços livres da FAT
+  int flag = 0;
+  
+  //Contando os espaços livres da FAT
   for (int i = 0; i < SIZE_FAT; i++)
   {
+   
     if(fat[i] != AGRUP_LIVRE)
     {
+      if(flag == 0 && i > 32)
+      {
+        flag = 1;
+        printf("Deu ruim no FAT[%d]\n", i);
+      }
+      
       agrupOcup++;
+    }
+    if(flag == 1 && fat[i] == AGRUP_LIVRE)
+    {
+      flag = 0;
+      printf("Deu bom no FAT[%d]\n", i);
     }
   }
 
@@ -229,13 +240,13 @@ int fs_create(char* file_name) {
 
     //Escrevendo no arquivo
     //FAT
-    for(int cluster = 0; cluster < 32; cluster++)
+    for(int agrupamento = 0; agrupamento < 32; agrupamento++)
     {
       for(int sector = 0; sector < 8; sector++)
       {
         char buffer[SECTORSIZE];
-        memcpy(buffer, &fat[(cluster*8)+sector], SECTORSIZE);
-        bl_write((cluster*8 + sector), buffer);
+        memcpy(buffer, &fat[(agrupamento*8)+sector], SECTORSIZE);
+        bl_write((agrupamento*8 + sector), buffer);
       }
     }
 
@@ -281,27 +292,26 @@ int fs_remove(char *file_name) {
 
   fat[indice] = AGRUP_LIVRE;
   dir[i].used = 'F';
-
-    //Escrevendo no arquivo
-    //FAT
-    for(int cluster = 0; cluster < 32; cluster++)
-    {
-      for(int sector = 0; sector < 8; sector++)
-      {
-        char buffer[SECTORSIZE];
-        memcpy(buffer, &fat[(cluster*8)+sector], SECTORSIZE);
-        bl_write((cluster*8 + sector), buffer);
-      }
-    }
-
-    //Diretório
+  //Escrevendo no arquivo
+  //FAT
+  for(int agrupamento = 0; agrupamento < 32; agrupamento++)
+  {
     for(int sector = 0; sector < 8; sector++)
     {
       char buffer[SECTORSIZE];
-      memcpy(buffer, dir+sector*SECTORSIZE, SECTORSIZE);
-      bl_write(sector + 32*8, buffer);
-
+      memcpy(buffer, &fat[(agrupamento*8)+sector], SECTORSIZE);
+      bl_write((agrupamento*8 + sector), buffer);
     }
+  }
+
+  //Diretório
+  for(int sector = 0; sector < 8; sector++)
+  {
+    char buffer[SECTORSIZE];
+    memcpy(buffer, dir+sector*SECTORSIZE, SECTORSIZE);
+    bl_write(sector + 32*8, buffer);
+
+  }
   return 1;
 }
 
