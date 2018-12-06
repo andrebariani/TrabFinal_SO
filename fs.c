@@ -135,7 +135,7 @@ int fs_format() {
   {
     char buffer[SECTORSIZE];
     memcpy(buffer, (char *) dir, SECTORSIZE);
-    bl_write(sector*256, buffer);
+    bl_write(sector + 256, buffer);
 
   }
 
