@@ -88,11 +88,11 @@ int fs_init() {
   {
     char buffer[SECTORSIZE];
 
-    if(!bl_read(sector + 32*SECTORSIZE, buffer)){
+    if(!bl_read(sector + 32*8, buffer)){
         printf("Erro no carregamento da Diretorio. Disco nao esta formatado!\n");
         return 0;
     }
-    memcpy(dir+sector*SECTORSIZE, buffer, SECTORSIZE);
+    memcpy(dir+sector*8, buffer, SECTORSIZE);
   }
 
   return 1;
@@ -198,6 +198,11 @@ int fs_create(char* file_name) {
           entradaDirLivre = i;
       }
 
+    }
+
+    if(entradaDirLivre == -1) {
+        printf("Erro: Diretorio cheio!\n");
+        return 0;
     }
 
     //Buscando agrupamento livre na FAT
