@@ -59,7 +59,9 @@ int fs_init() {
       for(int sector = 0; sector < 8; sector++)
       {
         char buffer[SECTORSIZE];
-        bl_read((cluster*8 + sector), buffer);
+        if(!bl_read((cluster*8 + sector), buffer)){
+            return 0;
+        }
         bytencpy((char *) fat, buffer, SECTORSIZE);
       }
   }
@@ -69,19 +71,20 @@ int fs_init() {
   {
     if(fat[i] != AGRUP_FAT)
     {
-      return 1;
+      return 0;
     }
   }
   if(fat[32] != AGRUP_DIR)
   {
-    return 1;
+    return 0;
   }
 
   //Carregando Diretório
   for(int sector = 0; sector < 8; sector++)
   {
     char buffer[SECTORSIZE];
-    bl_read(sector + 256, buffer);
+    if(!bl_read(sector + 256, buffer))
+        return 0;
     bytencpy((char *) dir, buffer, SECTORSIZE);
   }
 
