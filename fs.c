@@ -148,7 +148,7 @@ int fs_free() {
 
   //Contando os empaços livres da FAT
   for (int i = 0; i < SIZE_FAT; i++)
-  {
+  { 
     if(fat[i] != AGRUP_LIVRE)
     {
       agrupOcup++;
@@ -156,7 +156,7 @@ int fs_free() {
   }
 
   //Multiplicando para tranformar os clusters em bytes
-  return (bl_size()-agrupOcup* CLUSTERSIZE)*SECTORSIZE;
+  return (bl_size()-agrupOcup* 8)*SECTORSIZE;
 }
 
 int fs_list(char *buffer, int size) {
@@ -252,8 +252,57 @@ int fs_create(char* file_name) {
 }
 
 int fs_remove(char *file_name) {
-  printf("Função não implementada: fs_remove\n");
-  return 0;
+  
+  int indice = -1;
+  int i;
+  for(i = 0; i < SIZE_DIR; i++)
+  {
+    if(dir[i].used == 'T' && !strcmp(file_name, dir[i].name))
+    {
+        indice = dir[i].first_block;
+        break;
+    }
+  }
+
+  if(indice == -1)
+  {
+    printf("Erro: Arquivo inexistente!\n");
+
+    return 0;
+  }
+
+  int anterior = indice;
+  while(fat[indice] != AGRUP_ULTIMO)
+  {
+    indice = fat[anterior];
+    fat[anterior] = AGRUP_LIVRE;
+    anterior = indice;
+  }
+
+  fat[indice] = AGRUP_LIVRE;
+  dir[i].used = 'F';
+
+    //Escrevendo no arquivo
+    //FAT
+    for(int cluster = 0; cluster < 32; cluster++)
+    {
+      for(int sector = 0; sector < 8; sector++)
+      {
+        char buffer[SECTORSIZE];
+        memcpy(buffer, fat+(cluster*8)+sector, SECTORSIZE);
+        bl_write((cluster*8 + sector), buffer);
+      }
+    }
+
+    //Diretório
+    for(int sector = 0; sector < 8; sector++)
+    {
+      char buffer[SECTORSIZE];
+      memcpy(buffer, dir+sector*SECTORSIZE, SECTORSIZE);
+      bl_write(sector + 32*8, buffer);
+
+    }
+  return 1;
 }
 
 int fs_open(char *file_name, int mode) {
