@@ -62,8 +62,7 @@ int fs_init() {
             printf("Erro no carregamento da FAT. Disco nao esta formatado!\n");
             return 0;
         }
-        printf("%d\t%d\n", agrupamento, sector);
-        memcpy(fat+(agrupamento*8+sector)*SECTORSIZE, buffer, SECTORSIZE);
+        memcpy(fat+((agrupamento*8+sector)*SECTORSIZE/2), buffer, SECTORSIZE);
       }
   }
   //Verficando integridade
@@ -124,7 +123,7 @@ int fs_format() {
     for(int sector = 0; sector < 8; sector++)
     {
       char buffer[SECTORSIZE];
-      memcpy(buffer, fat+(agrupamento*8*SECTORSIZE)+sector*SECTORSIZE, SECTORSIZE);
+      memcpy(buffer, fat+((agrupamento*8 + sector)*SECTORSIZE/2), SECTORSIZE);
       bl_write((agrupamento*8 + sector), buffer);
     }
   }
@@ -143,26 +142,14 @@ int fs_format() {
 
 int fs_free() {
   int agrupOcup = 0;
-  int flag = 0;
-  
+
   //Contando os espaços livres da FAT
   for (int i = 0; i < SIZE_FAT; i++)
   {
    
     if(fat[i] != AGRUP_LIVRE)
-    {
-      if(flag == 0 && i > 32)
-      {
-        flag = 1;
-        printf("Deu ruim no FAT[%d]\n", i);
-      }
-      
+    { 
       agrupOcup++;
-    }
-    if(flag == 1 && fat[i] == AGRUP_LIVRE)
-    {
-      flag = 0;
-      printf("Deu bom no FAT[%d]\n", i);
     }
   }
 
@@ -238,26 +225,26 @@ int fs_create(char* file_name) {
     //FAT
     fat[posFat]=AGRUP_ULTIMO;
 
-    //Escrevendo no arquivo
-    //FAT
-    for(int agrupamento = 0; agrupamento < 32; agrupamento++)
-    {
-      for(int sector = 0; sector < 8; sector++)
-      {
-        char buffer[SECTORSIZE];
-        memcpy(buffer, &fat[(agrupamento*8)+sector], SECTORSIZE);
-        bl_write((agrupamento*8 + sector), buffer);
-      }
-    }
-
-    //Diretório
+  //Escrevendo no arquivo
+  //FAT
+  for(int agrupamento = 0; agrupamento < 32; agrupamento++)
+  {
     for(int sector = 0; sector < 8; sector++)
     {
       char buffer[SECTORSIZE];
-      memcpy(buffer, dir+sector*SECTORSIZE, SECTORSIZE);
-      bl_write(sector + 32*8, buffer);
-
+      memcpy(buffer, fat+((agrupamento*8 + sector)*SECTORSIZE/2), SECTORSIZE);
+      bl_write((agrupamento*8 + sector), buffer);
     }
+  }
+
+  //Diretório
+  for(int sector = 0; sector < 8; sector++)
+  {
+    char buffer[SECTORSIZE];
+    memcpy(buffer, dir+sector*SECTORSIZE, SECTORSIZE);
+    bl_write(sector + 32*8, buffer);
+
+  }
 
     return 1;
 }
@@ -268,6 +255,7 @@ int fs_remove(char *file_name) {
   int i;
   for(i = 0; i < SIZE_DIR; i++)
   {
+    //Checando nome e disponibilidade
     if(dir[i].used == 'T' && !strcmp(file_name, dir[i].name))
     {
         indice = dir[i].first_block;
@@ -282,6 +270,7 @@ int fs_remove(char *file_name) {
     return 0;
   }
 
+  //Removendo o arquivo
   int anterior = indice;
   while(fat[indice] != AGRUP_ULTIMO)
   {
@@ -292,6 +281,7 @@ int fs_remove(char *file_name) {
 
   fat[indice] = AGRUP_LIVRE;
   dir[i].used = 'F';
+
   //Escrevendo no arquivo
   //FAT
   for(int agrupamento = 0; agrupamento < 32; agrupamento++)
@@ -299,7 +289,7 @@ int fs_remove(char *file_name) {
     for(int sector = 0; sector < 8; sector++)
     {
       char buffer[SECTORSIZE];
-      memcpy(buffer, &fat[(agrupamento*8)+sector], SECTORSIZE);
+      memcpy(buffer, fat+((agrupamento*8 + sector)*SECTORSIZE/2), SECTORSIZE);
       bl_write((agrupamento*8 + sector), buffer);
     }
   }
@@ -312,6 +302,7 @@ int fs_remove(char *file_name) {
     bl_write(sector + 32*8, buffer);
 
   }
+
   return 1;
 }
 
