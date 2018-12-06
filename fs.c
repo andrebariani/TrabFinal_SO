@@ -63,7 +63,8 @@ int fs_init() {
             printf("Erro no carregamento da FAT. Disco nao esta formatado!\n");
             return 0;
         }
-        memcpy((char *) fat, buffer, SECTORSIZE);
+
+        memcpy(fat+(cluster*8)+sector, buffer, SECTORSIZE);
       }
   }
 
