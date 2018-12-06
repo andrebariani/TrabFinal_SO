@@ -60,7 +60,7 @@ int fs_init() {
         char buffer[SECTORSIZE];
         if(!bl_read((cluster*8 + sector), buffer))
         {
-            perror("Erro no carregamento da FAT. Disco nao formatado");
+            printf("Erro no carregamento da FAT. Disco nao esta formatado!\n");
             return 0;
         }
         memcpy((char *) fat, buffer, SECTORSIZE);
@@ -72,13 +72,13 @@ int fs_init() {
   {
     if(fat[i] != AGRUP_FAT)
     {
-        perror("Erro na integridade da FAT. Disco nao formatado");
+        printf("Erro no carregamento da FAT. Disco nao esta formatado!\n");
         return 1;
     }
   }
   if(fat[32] != AGRUP_DIR)
   {
-      perror("Erro na integridade Diretorio. Disco nao formatado");
+      printf("Erro no carregamento do FAT. Disco nao esta formatado!\n");
       return 1;
   }
 
@@ -87,11 +87,11 @@ int fs_init() {
   {
     char buffer[SECTORSIZE];
 
-    if(!bl_read(sector + 256, buffer)){
-        perror("Erro no carregamento do Diretorio. Disco nao formatado");
+    if(!bl_read(sector + 32*SECTORSIZE, buffer)){
+        printf("Erro no carregamento da Diretorio. Disco nao esta formatado!\n");
         return 0;
     }
-    memcpy((char *) dir, buffer, SECTORSIZE);
+    memcpy(dir+sector*SECTORSIZE, buffer, SECTORSIZE);
   }
 
   return 1;
@@ -125,7 +125,7 @@ int fs_format() {
     for(int sector = 0; sector < 8; sector++)
     {
       char buffer[SECTORSIZE];
-      memcpy(buffer, (char *) fat, SECTORSIZE);
+      memcpy(buffer, fat+(cluster*8)+sector, SECTORSIZE);
       bl_write((cluster*8 + sector), buffer);
     }
   }
@@ -134,8 +134,8 @@ int fs_format() {
   for(int sector = 0; sector < 8; sector++)
   {
     char buffer[SECTORSIZE];
-    memcpy(buffer, (char *) dir, SECTORSIZE);
-    bl_write(sector + 256, buffer);
+    memcpy(buffer, dir+sector*SECTORSIZE, SECTORSIZE);
+    bl_write(sector + 32*8, buffer);
 
   }
 
@@ -175,10 +175,11 @@ int fs_list(char *buffer, int size) {
 }
 
 int fs_create(char* file_name) {
+
     //Testando tamanho do nome
     if(strlen(file_name)>24)
     {
-        perror("Erro: Nome de arquivo muito grande!");
+        printf("Erro: Nome de arquivo muito grande!\n");
         return 0;
     }
 
@@ -188,7 +189,7 @@ int fs_create(char* file_name) {
     {
       if(dir[i].used == 'T' && !strcmp(file_name, dir[i].name))
       {
-          perror("Erro: Ja existe um arquivo com esse nome!");
+          printf("Erro: Ja existe um arquivo com esse nome!\n");
           return 0;
       }
       else if(dir[i].used == 'F' && entradaDirLivre == -1 )
@@ -206,7 +207,7 @@ int fs_create(char* file_name) {
 
     if(posFat==SIZE_FAT)
     {
-        perror("Erro: Nao ha espaco livre no disco!");
+        printf("Erro: Nao ha espaco livre no disco!\n");
         return 0;
     }
 
@@ -219,6 +220,27 @@ int fs_create(char* file_name) {
     dir[entradaDirLivre].size=0;
     //FAT
     fat[posFat]=AGRUP_ULTIMO;
+
+    //Escrevendo no arquivo
+    //FAT
+    for(int cluster = 0; cluster < 32; cluster++)
+    {
+      for(int sector = 0; sector < 8; sector++)
+      {
+        char buffer[SECTORSIZE];
+        memcpy(buffer, fat+(cluster*8)+sector, SECTORSIZE);
+        bl_write((cluster*8 + sector), buffer);
+      }
+    }
+
+    //Diretório
+    for(int sector = 0; sector < 8; sector++)
+    {
+      char buffer[SECTORSIZE];
+      memcpy(buffer, dir+sector*SECTORSIZE, SECTORSIZE);
+      bl_write(sector + 32*8, buffer);
+
+    }
 
     return 1;
 }
