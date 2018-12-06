@@ -64,7 +64,7 @@ int fs_init() {
             return 0;
         }
 
-        memcpy(fat+(cluster*8)+sector, buffer, SECTORSIZE);
+        memcpy(&fat[(cluster*8)+sector], buffer, SECTORSIZE);
       }
   }
 
@@ -126,7 +126,7 @@ int fs_format() {
     for(int sector = 0; sector < 8; sector++)
     {
       char buffer[SECTORSIZE];
-      memcpy(buffer, fat+(cluster*8)+sector, SECTORSIZE);
+      memcpy(buffer, &fat[(cluster*8)+sector], SECTORSIZE);
       bl_write((cluster*8 + sector), buffer);
     }
   }
@@ -148,7 +148,7 @@ int fs_free() {
 
   //Contando os empaços livres da FAT
   for (int i = 0; i < SIZE_FAT; i++)
-  { 
+  {
     if(fat[i] != AGRUP_LIVRE)
     {
       agrupOcup++;
@@ -234,7 +234,7 @@ int fs_create(char* file_name) {
       for(int sector = 0; sector < 8; sector++)
       {
         char buffer[SECTORSIZE];
-        memcpy(buffer, fat+(cluster*8)+sector, SECTORSIZE);
+        memcpy(buffer, &fat[(cluster*8)+sector], SECTORSIZE);
         bl_write((cluster*8 + sector), buffer);
       }
     }
@@ -252,7 +252,7 @@ int fs_create(char* file_name) {
 }
 
 int fs_remove(char *file_name) {
-  
+
   int indice = -1;
   int i;
   for(i = 0; i < SIZE_DIR; i++)
@@ -289,7 +289,7 @@ int fs_remove(char *file_name) {
       for(int sector = 0; sector < 8; sector++)
       {
         char buffer[SECTORSIZE];
-        memcpy(buffer, fat+(cluster*8)+sector, SECTORSIZE);
+        memcpy(buffer, &fat[(cluster*8)+sector], SECTORSIZE);
         bl_write((cluster*8 + sector), buffer);
       }
     }
