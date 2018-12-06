@@ -60,7 +60,7 @@ int fs_init() {
         char buffer[SECTORSIZE];
         if(!bl_read((cluster*8 + sector), buffer))
         {
-            perror("Erro no carregamento da FAT. Disco nao formatado.");
+            perror("Erro no carregamento da FAT. Disco nao formatado");
             return 0;
         }
         memcpy((char *) fat, buffer, SECTORSIZE);
@@ -72,13 +72,13 @@ int fs_init() {
   {
     if(fat[i] != AGRUP_FAT)
     {
-        perror("Erro na integridade da FAT. Disco nao formatado.");
+        perror("Erro na integridade da FAT. Disco nao formatado");
         return 1;
     }
   }
   if(fat[32] != AGRUP_DIR)
   {
-      perror("Erro na integridade Diretorio. Disco nao formatado.");
+      perror("Erro na integridade Diretorio. Disco nao formatado");
       return 1;
   }
 
@@ -88,7 +88,7 @@ int fs_init() {
     char buffer[SECTORSIZE];
 
     if(!bl_read(sector + 256, buffer)){
-        perror("Erro no carregamento do Diretorio. Disco nao formatado.");
+        perror("Erro no carregamento do Diretorio. Disco nao formatado");
         return 0;
     }
     memcpy((char *) dir, buffer, SECTORSIZE);
@@ -143,8 +143,6 @@ int fs_format() {
 }
 
 int fs_free() {
-  /*------------DUVIDA------------*/
-  /*Temos que carregar a fat aqui?*/
   int agrupOcup = 0;
 
   //Contando os empaços livres da FAT
@@ -166,7 +164,7 @@ int fs_list(char *buffer, int size) {
 
   for (int i = 0; i < SIZE_DIR; i++)
   {
-    if(dir[i].used != 'F')
+    if(dir[i].used == 'T')
     {
       sprintf(aux, "%s\t\t%d\n", dir[i].name, dir[i].size);
       strcpy( &( buffer[strlen(buffer)] ), aux);
@@ -177,8 +175,52 @@ int fs_list(char *buffer, int size) {
 }
 
 int fs_create(char* file_name) {
-  printf("Função não implementada: fs_create\n");
-  return 0;
+    //Testando tamanho do nome
+    if(strlen(file_name)>24)
+    {
+        perror("Erro: Nome de arquivo muito grande!");
+        return 0;
+    }
+
+    int entradaDirLivre=-1;
+    //Buscando arquivo no diretorio
+    for (int i = 0; i < SIZE_DIR; i++)
+    {
+      if(dir[i].used == 'T' && !strcmp(file_name, dir[i].name))
+      {
+          perror("Erro: Ja existe um arquivo com esse nome!");
+          return 0;
+      }
+      else if(dir[i].used == 'F' && entradaDirLivre == -1 )
+      {
+          entradaDirLivre = i;
+      }
+
+    }
+
+    //Buscando agrupamento livre na FAT
+    int posFat=33;
+
+    while(posFat < SIZE_FAT&&fat[posFat]!=AGRUP_LIVRE)
+        posFat++;
+
+    if(posFat==SIZE_FAT)
+    {
+        perror("Erro: Nao ha espaco livre no disco!");
+        return 0;
+    }
+
+    //Definindo valores
+
+    //Diretorio
+    dir[entradaDirLivre].used='T';
+    strncpy(dir[entradaDirLivre].name,file_name,25);
+    dir[entradaDirLivre].first_block=posFat;
+    dir[entradaDirLivre].size=0;
+    //FAT
+    fat[posFat]=AGRUP_ULTIMO;
+
+    return 1;
 }
 
 int fs_remove(char *file_name) {
