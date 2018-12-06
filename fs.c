@@ -60,6 +60,7 @@ int fs_init() {
         char buffer[SECTORSIZE];
         if(!bl_read((cluster*8 + sector), buffer))
         {
+            perror("Erro no carregamento da FAT. Disco nao formatado.");
             return 0;
         }
         memcpy((char *) fat, buffer, SECTORSIZE);
@@ -71,26 +72,26 @@ int fs_init() {
   {
     if(fat[i] != AGRUP_FAT)
     {
-      return 0;
+        perror("Erro na integridade da FAT. Disco nao formatado.");
+        return 1;
     }
   }
   if(fat[32] != AGRUP_DIR)
   {
-    return 0;
+      perror("Erro na integridade Diretorio. Disco nao formatado.");
+      return 1;
   }
 
   //Carregando Diretório
   for(int sector = 0; sector < 8; sector++)
   {
     char buffer[SECTORSIZE];
-<<<<<<< HEAD
-    if(!bl_read(sector + 256, buffer))
+
+    if(!bl_read(sector + 256, buffer)){
+        perror("Erro no carregamento do Diretorio. Disco nao formatado.");
         return 0;
-    bytencpy((char *) dir, buffer, SECTORSIZE);
-=======
-    bl_read(sector + 256, buffer);
+    }
     memcpy((char *) dir, buffer, SECTORSIZE);
->>>>>>> db1462d2b3a39f80c55a4996b55ffec98a7c25d0
   }
 
   return 1;
@@ -134,7 +135,7 @@ int fs_format() {
   {
     char buffer[SECTORSIZE];
     memcpy(buffer, (char *) dir, SECTORSIZE);
-    bl_write(sector + 256, buffer);
+    bl_write(sector*256, buffer);
 
   }
 
