@@ -148,7 +148,7 @@ int fs_free() {
   }
 
   //Multiplicando para tranformar os clusters em bytes
-  return bl_size(   )-(agrupOcup * CLUSTERSIZE);
+  return (bl_size()-agrupOcup* CLUSTERSIZE)*SECTORSIZE;
 }
 
 int fs_list(char *buffer, int size) {
