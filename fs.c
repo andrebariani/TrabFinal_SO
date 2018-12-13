@@ -72,7 +72,7 @@ int fs_init() {
             printf("Erro no carregamento da FAT. Disco nao esta formatado!\n");
             return 0;
         }
-        memcpy(fat+((agrupamento*8+sector)*SECTORSIZE/2), buffer, SECTORSIZE);
+        memcpy(((char*) fat)+((agrupamento*8+sector)*SECTORSIZE), buffer, SECTORSIZE);
       }
   }
   //Verficando integridade
@@ -99,7 +99,7 @@ int fs_init() {
         printf("Erro no carregamento da Diretorio. Disco nao esta formatado!\n");
         return 0;
     }
-    memcpy(dir+sector*8, buffer, SECTORSIZE);
+    memcpy(((char*) dir)+sector*SECTORSIZE, buffer, SECTORSIZE);
   }
 
   return 1;
@@ -133,7 +133,7 @@ int fs_format() {
     for(int sector = 0; sector < 8; sector++)
     {
       char buffer[SECTORSIZE];
-      memcpy(buffer, fat+((agrupamento*8 + sector)*SECTORSIZE/2), SECTORSIZE);
+      memcpy(buffer, ((char*) fat)+((agrupamento*8 + sector)*SECTORSIZE), SECTORSIZE);
       bl_write((agrupamento*8 + sector), buffer);
     }
   }
@@ -142,7 +142,8 @@ int fs_format() {
   for(int sector = 0; sector < 8; sector++)
   {
     char buffer[SECTORSIZE];
-    memcpy(buffer, dir+sector*SECTORSIZE, SECTORSIZE);
+    memcpy(buffer, ((char*) dir)+sector*SECTORSIZE, SECTORSIZE);
+    printf("%d\n", sector + 32*8);
     bl_write(sector + 32*8, buffer);
 
   }
@@ -156,9 +157,9 @@ int fs_free() {
   //Contando os espaços livres da FAT
   for (int i = 0; i < SIZE_FAT; i++)
   {
-   
+
     if(fat[i] != AGRUP_LIVRE)
-    { 
+    {
       agrupOcup++;
     }
   }
@@ -242,7 +243,7 @@ int fs_create(char* file_name) {
     for(int sector = 0; sector < 8; sector++)
     {
       char buffer[SECTORSIZE];
-      memcpy(buffer, fat+((agrupamento*8 + sector)*SECTORSIZE/2), SECTORSIZE);
+      memcpy(buffer, ((char*) fat)+((agrupamento*8 + sector)*SECTORSIZE), SECTORSIZE);
       bl_write((agrupamento*8 + sector), buffer);
     }
   }
@@ -251,7 +252,7 @@ int fs_create(char* file_name) {
   for(int sector = 0; sector < 8; sector++)
   {
     char buffer[SECTORSIZE];
-    memcpy(buffer, dir+sector*SECTORSIZE, SECTORSIZE);
+    memcpy(buffer, ((char*) dir)+sector*SECTORSIZE, SECTORSIZE);
     bl_write(sector + 32*8, buffer);
 
   }
@@ -299,7 +300,7 @@ int fs_remove(char *file_name) {
     for(int sector = 0; sector < 8; sector++)
     {
       char buffer[SECTORSIZE];
-      memcpy(buffer, fat+((agrupamento*8 + sector)*SECTORSIZE/2), SECTORSIZE);
+      memcpy(buffer, ((char*) fat)+((agrupamento*8 + sector)*SECTORSIZE), SECTORSIZE);
       bl_write((agrupamento*8 + sector), buffer);
     }
   }
@@ -308,7 +309,7 @@ int fs_remove(char *file_name) {
   for(int sector = 0; sector < 8; sector++)
   {
     char buffer[SECTORSIZE];
-    memcpy(buffer, dir+sector*SECTORSIZE, SECTORSIZE);
+    memcpy(buffer, ((char*) dir)+sector*SECTORSIZE, SECTORSIZE);
     bl_write(sector + 32*8, buffer);
 
   }
@@ -338,7 +339,7 @@ int fs_open(char *file_name, int mode) {
     	return -1;
 		}
 
-		if(arquivos[pos].estado==ARQ_FECHADO){	
+		if(arquivos[pos].estado==ARQ_FECHADO){
 			arquivos[pos].estado = ARQ_ABERTO_LEITURA;
 			arquivos[pos].posAtual = 0;
 			arquivos[pos].buffer = NULL;
@@ -365,7 +366,7 @@ int fs_open(char *file_name, int mode) {
 
 		}
 
-		if(arquivos[pos].estado==ARQ_FECHADO){	
+		if(arquivos[pos].estado==ARQ_FECHADO){
 			arquivos[pos].estado = ARQ_ABERTO_LEITURA;
 			arquivos[pos].posAtual = 0;
 			arquivos[pos].buffer = NULL;
@@ -376,7 +377,7 @@ int fs_open(char *file_name, int mode) {
     	return -1;
 		}
 	}
-	
+
   return pos;
 }
 
