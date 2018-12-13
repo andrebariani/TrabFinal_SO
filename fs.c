@@ -143,7 +143,6 @@ int fs_format() {
   {
     char buffer[SECTORSIZE];
     memcpy(buffer, ((char*) dir)+sector*SECTORSIZE, SECTORSIZE);
-    printf("%d\n", sector + 32*8);
     bl_write(sector + 32*8, buffer);
 
   }
@@ -394,7 +393,6 @@ int fs_close(int file)  {
 		arquivos[file].posAtual = -1;
 		arquivos[file].buffer = NULL;
 	}
-
   return 1;
 }
 
