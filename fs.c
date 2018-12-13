@@ -44,7 +44,7 @@ typedef struct {
 } Arquivo;
 
 dir_entry dir[128];
-Arquivo arqu[128];
+Arquivo arquivos[128];
 
 /* Constantes de Agrupamentos */
 
@@ -318,12 +318,56 @@ int fs_remove(char *file_name) {
 
 int fs_open(char *file_name, int mode) {
   printf("fs_open\n");
+	//Testando tamanho do nome
+  if(strlen(file_name)>24)
+  {
+		printf("Erro: Nome de arquivo muito grande!\n");
+    return -1;
+	}
+	//Buscando arquivo no diretorio
+	int pos=0;
+	while(pos < SIZE_DIR && dir[pos].used == 'T' && !strcmp(file_name, dir[pos].name))
+		pos++;
+
+	if(mode == FS_R)
+	{
+		//Leitura
+		if(pos==SIZE_DIR)
+		{
+			printf("Erro: Arquivo %s nao existe!\n", file_name);
+    	return -1;
+		}
+		arquivos[pos].estado = ARQ_ABERTO_LEITURA;
+		arquivos[pos].posAtual = 0;
+		arquivos[pos].buffer = malloc(CLUSTER_SIZE);
+			
+	}
+	else
+	{
+		//Escrita
+		if(pos==SIZE_DIR)
+		{
+			if(!fs_create(file_name))
+			{
+				return -1;
+			}
+
+			pos=0;
+			while(pos < SIZE_DIR && dir[pos].used == 'T' && !strcmp(file_name, dir[pos].name));
+			pos++;
+
+		}
+		arquivos[pos].estado = ARQ_ABERTO_ESCRITA;
+		arquivos[pos].posAtual = 0;
+		arquivos[pos].buffer = malloc(CLUSTER_SIZE);
+		
+	}
 	
-  return -1;
+  return pos;
 }
 
 int fs_close(int file)  {
-  printf("Função não implementada: fs_close\n");
+  printf("fs_close\n");
   return 0;
 }
 
