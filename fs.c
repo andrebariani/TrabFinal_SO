@@ -385,15 +385,14 @@ int fs_close(int file)  {
   printf("fs_close\n");
 
 	if(arquivos[file].estado==ARQ_FECHADO){
-		printf("Erro: Arquivo %s ja esta fechado!\n", file_name);
+		printf("Erro: Arquivo ja esta fechado!\n");
     	return 0;
 	}
 	else
 	{
-		arquivos[pos].estado = ARQ_FECHADO;
-		arquivos[pos].posAtual = -1;
-		if(arquivos[pos].buffer != NULL)
-			free(arquivos[pos].buffer);
+		arquivos[file].estado = ARQ_FECHADO;
+		arquivos[file].posAtual = -1;
+		arquivos[file].buffer = NULL;
 	}
 
   return 1;
