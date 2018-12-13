@@ -337,10 +337,17 @@ int fs_open(char *file_name, int mode) {
 			printf("Erro: Arquivo %s nao existe!\n", file_name);
     	return -1;
 		}
-		arquivos[pos].estado = ARQ_ABERTO_LEITURA;
-		arquivos[pos].posAtual = 0;
-		arquivos[pos].buffer = malloc(CLUSTER_SIZE);
-			
+
+		if(arquivos[pos].estado==ARQ_FECHADO){	
+			arquivos[pos].estado = ARQ_ABERTO_LEITURA;
+			arquivos[pos].posAtual = 0;
+			arquivos[pos].buffer = NULL;
+		}
+		else
+		{
+			printf("Erro: Arquivo %s ja esta aberto!\n", file_name);
+    	return -1;
+		}
 	}
 	else
 	{
@@ -357,10 +364,17 @@ int fs_open(char *file_name, int mode) {
 			pos++;
 
 		}
-		arquivos[pos].estado = ARQ_ABERTO_ESCRITA;
-		arquivos[pos].posAtual = 0;
-		arquivos[pos].buffer = malloc(CLUSTER_SIZE);
-		
+
+		if(arquivos[pos].estado==ARQ_FECHADO){	
+			arquivos[pos].estado = ARQ_ABERTO_LEITURA;
+			arquivos[pos].posAtual = 0;
+			arquivos[pos].buffer = NULL;
+		}
+		else
+		{
+			printf("Erro: Arquivo %s ja esta aberto!\n", file_name);
+    	return -1;
+		}
 	}
 	
   return pos;
@@ -368,7 +382,20 @@ int fs_open(char *file_name, int mode) {
 
 int fs_close(int file)  {
   printf("fs_close\n");
-  return 0;
+
+	if(arquivos[file].estado==ARQ_FECHADO){
+		printf("Erro: Arquivo %s ja esta fechado!\n", file_name);
+    	return 0;
+	}
+	else
+	{
+		arquivos[pos].estado = ARQ_FECHADO;
+		arquivos[pos].posAtual = -1;
+		if(arquivos[pos].buffer != NULL)
+			free(arquivos[pos].buffer);
+	}
+
+  return 1;
 }
 
 int fs_write(char *buffer, int size, int file) {
