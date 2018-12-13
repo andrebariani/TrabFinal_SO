@@ -37,7 +37,14 @@ typedef struct {
        int size;
 } dir_entry;
 
+typedef struct {
+			char estado;
+   		int posAtual;
+			char* buffer;
+} Arquivo;
+
 dir_entry dir[128];
+Arquivo arqu[128];
 
 /* Constantes de Agrupamentos */
 
@@ -48,7 +55,10 @@ dir_entry dir[128];
 #define SIZE_FAT 65536
 #define SIZE_DIR 128
 
-/* Funções auxiliaes */
+/* Constantes de Arquivos */
+#define ARQ_FECHADO 'C'
+#define ARQ_ABERTO_ESCRITA 'W'
+#define ARQ_ABERTO_LEITURA 'R'
 
 int fs_init() {
   //Carregando FAT
@@ -307,7 +317,8 @@ int fs_remove(char *file_name) {
 }
 
 int fs_open(char *file_name, int mode) {
-  printf("Função não implementada: fs_open\n");
+  printf("fs_open\n");
+	
   return -1;
 }
 
