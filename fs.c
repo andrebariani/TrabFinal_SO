@@ -394,7 +394,83 @@ int fs_close(int file)  {
 
 int fs_write(char *buffer, int size, int file) {
   printf("Função não implementada: fs_write\n");
-  return -1;
+
+  if(arquivos[file].estado==ARQ_ABERTO_LEITURA)
+  {
+      printf("Erro: Arquivo aberto para leitura!\n");
+      return -1;
+  }
+  else if((arquivos[file].estado==ARQ_FECHADO){
+      printf("Erro: Arquivo nao foi aberto!\n");
+      return -1;
+  }
+
+  //Verificando se existe espaço no disco para escrita
+  //Calculando tamanho total final do arquivos (em bytes)
+  int tamFinal= dir[file].size + size;
+
+  if(tamFinal % CLUSTERSIZE)
+  {
+      //Convertendo o tamanho em blocos
+      tamFinal = (tamFinal / CLUSTERSIZE) + 1;
+  }
+  else
+  {
+      //Convertendo o tamanho em blocos
+      tamFinal = tamFinal / CLUSTERSIZE;
+  }
+
+  int agrupAtual = dir[file].first_block;
+
+  //Pulando agrupamentos ja escritos
+  do{
+      agrupAtual=fat[agrupAtual];
+      tamFinal--;
+  }while (fat[agrupAtual]!=AGRUP_ULTIMO);
+
+  int agrupFinalOriginal = agrupAtual;
+
+  //Enquanto houverem agrup. a serem escritos
+  while (tamFinal>0) {
+      //Buscando agrupamento livre na FAT
+      int posFat=33;
+
+      while(posFat < SIZE_FAT&&fat[posFat]!=AGRUP_LIVRE)
+          posFat++;
+
+      if(posFat==SIZE_FAT)
+      {
+          printf("Erro: Nao ha espaco livre no disco!\n");
+          return -1;
+      }
+
+      fat[agrupAtual]=posFat;
+      fat[posFat]=AGRUP_ULTIMO;
+      agrupAtual=posFat;
+      tamFinal--;
+  }
+
+  //Escrevendo (EFETIVAMENTE) dados no disco
+  //Carregando o ultimo agrupamento
+  char agrupBuffer[CLUSTERSIZE];
+  for(int sector = 0; sector < 8; sector++)
+  {
+    if(!bl_read((agrupFinalOriginal*8 + sector), (char *) agrupBuffer + sector*SECTORSIZE))
+    {
+        printf("Erro no carregamento do arquivo.\n");
+        return -1;
+    }
+  }
+
+
+  memcpy((char *) agrupBuffer+(dir[file].size%CLUSTERSIZE),(char *) buffer, CLUSTERSIZE - (dir[file].size%CLUSTERSIZE));
+
+
+  //Atualizar Diretório
+
+  //Salvando FAT no Disco
+  //Salvando Diretorio no Disco
+  return size;
 }
 
 int fs_read(char *buffer, int size, int file) {
