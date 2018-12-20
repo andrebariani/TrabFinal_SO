@@ -38,9 +38,8 @@ typedef struct {
 } dir_entry;
 
 typedef struct {
-			char estado;
-   		int posAtual;
-			char* buffer;
+	char estado;
+   	int posAtual;
 } Arquivo;
 
 dir_entry dir[128];
@@ -321,7 +320,7 @@ int fs_open(char *file_name, int mode) {
 	//Testando tamanho do nome
   if(strlen(file_name)>24)
   {
-		printf("Erro: Nome de arquivo muito grande!\n");
+	printf("Erro: Nome de arquivo muito grande!\n");
     return -1;
 	}
 	//Buscando arquivo no diretorio
@@ -341,7 +340,6 @@ int fs_open(char *file_name, int mode) {
 		if(arquivos[pos].estado==ARQ_FECHADO){
 			arquivos[pos].estado = ARQ_ABERTO_LEITURA;
 			arquivos[pos].posAtual = 0;
-			arquivos[pos].buffer = NULL;
 		}
 		else
 		{
@@ -368,7 +366,6 @@ int fs_open(char *file_name, int mode) {
 		if(arquivos[pos].estado==ARQ_FECHADO){
 			arquivos[pos].estado = ARQ_ABERTO_LEITURA;
 			arquivos[pos].posAtual = 0;
-			arquivos[pos].buffer = NULL;
 		}
 		else
 		{
@@ -391,8 +388,7 @@ int fs_close(int file)  {
 	{
 		arquivos[file].estado = ARQ_FECHADO;
 		arquivos[file].posAtual = -1;
-		arquivos[file].buffer = NULL;
-	}
+    }
   return 1;
 }
 
@@ -402,6 +398,6 @@ int fs_write(char *buffer, int size, int file) {
 }
 
 int fs_read(char *buffer, int size, int file) {
-  printf("Função não implementada: fs_read\n");
-  return -1;
+    printf("Função não implementada: fs_read\n");
+    return -1;
 }
