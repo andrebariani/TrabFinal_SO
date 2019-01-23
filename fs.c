@@ -435,11 +435,13 @@ int fs_write(char *buffer, int size, int file) {
 
   int agrupAtual = dir[file].first_block;
 
+  tamFinal--;
+
   //Pulando agrupamentos ja escritos
-  do{
+  while (fat[agrupAtual]!=AGRUP_ULTIMO) {
       agrupAtual=fat[agrupAtual];
       tamFinal--;
-  }while (agrupAtual!=AGRUP_ULTIMO);
+  }
 
   int agrupFinalOriginal = agrupAtual;
 
