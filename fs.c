@@ -99,7 +99,12 @@ int fs_init() {
         return 0;
     }
     memcpy(((char*) dir)+sector*SECTORSIZE, buffer, SECTORSIZE);
+
   }
+
+  for(int i = 0 ; i < SIZE_DIR ; i++)
+      if(dir[i].used == 'T')
+        arquivos[i].estado = ARQ_FECHADO;
 
   return 1;
 }
@@ -231,6 +236,8 @@ int fs_create(char* file_name) {
     strncpy(dir[entradaDirLivre].name,file_name,25);
     dir[entradaDirLivre].first_block=posFat;
     dir[entradaDirLivre].size=0;
+    // estado do arquivo
+    arquivos[entradaDirLivre].estado=ARQ_FECHADO;
     //FAT
     fat[posFat]=AGRUP_ULTIMO;
 
@@ -325,11 +332,15 @@ int fs_open(char *file_name, int mode) {
 	}
 	//Buscando arquivo no diretorio
 	int pos=0;
-	while(pos < SIZE_DIR && dir[pos].used == 'T' && !strcmp(file_name, dir[pos].name))
-		pos++;
+	while(pos < SIZE_DIR && dir[pos].used == 'T' && strcmp(file_name, dir[pos].name))
+        pos++;
+
 
 	if(mode == FS_R)
 	{
+        printf("In position %d\n", pos);
+        printf("dir: %c\n", dir[pos].used);
+        printf("arquivos: %c\n", arquivos[pos].estado);
 		//Leitura
 		if(pos==SIZE_DIR)
 		{
@@ -358,13 +369,17 @@ int fs_open(char *file_name, int mode) {
 			}
 
 			pos=0;
-			while(pos < SIZE_DIR && dir[pos].used == 'T' && !strcmp(file_name, dir[pos].name));
-			pos++;
+			while(pos < SIZE_DIR && dir[pos].used == 'T' && strcmp(file_name, dir[pos].name))
+			         pos++;
 
 		}
 
+        printf("In position %d\n", pos);
+        printf("dir: %c\n", dir[pos].used);
+        printf("arquivos: %c\n", arquivos[pos].estado);
+
 		if(arquivos[pos].estado==ARQ_FECHADO){
-			arquivos[pos].estado = ARQ_ABERTO_LEITURA;
+			arquivos[pos].estado = ARQ_ABERTO_ESCRITA;
 			arquivos[pos].posAtual = 0;
 		}
 		else
@@ -393,7 +408,7 @@ int fs_close(int file)  {
 }
 
 int fs_write(char *buffer, int size, int file) {
-  printf("Função não implementada: fs_write\n");
+  // printf("Função não implementada: fs_write\n");
 
   if(arquivos[file].estado==ARQ_ABERTO_LEITURA)
   {
@@ -520,8 +535,6 @@ int fs_write(char *buffer, int size, int file) {
 }
 
 int fs_read(char *buffer, int size, int file) {
-    
-    printf("Função não implementada: fs_read\n");
 
   if(arquivos[file].estado==ARQ_ABERTO_ESCRITA)
   {
