@@ -409,14 +409,13 @@ int fs_write(char *buffer, int size, int file) {
   //Calculando tamanho total final do arquivos (em bytes)
   int tamFinal= dir[file].size + size;
 
+   //Convertendo o tamanho em blocos
   if(tamFinal % CLUSTERSIZE)
   {
-      //Convertendo o tamanho em blocos
       tamFinal = (tamFinal / CLUSTERSIZE) + 1;
   }
   else
   {
-      //Convertendo o tamanho em blocos
       tamFinal = tamFinal / CLUSTERSIZE;
   }
 
@@ -462,14 +461,61 @@ int fs_write(char *buffer, int size, int file) {
     }
   }
 
-
+  //Copiando o inicio do agrupamento novo no final do lido
   memcpy((char *) agrupBuffer+(dir[file].size%CLUSTERSIZE),(char *) buffer, CLUSTERSIZE - (dir[file].size%CLUSTERSIZE));
 
+  //Escrevendo o primeiro cluster
+  for(int sector = 0; sector < 8; sector++)
+  {
+      if(!bl_write((agrupFinalOriginal*8 + sector), (char *) agrupBuffer + sector*SECTORSIZE))
+      {
+          printf("Erro no carregamento do arquivo.\n");
+          return -1;
+      }
+  }
+  //Corrigindo ponteiro do buffer para apontar para o próximo agrupamento
+  buffer += (CLUSTERSIZE - (dir[file].size%CLUSTERSIZE));
+  int clustersEscritos=1;
+  //Escrevendo os demais clusters
+  for(int cluster = fat[agrupFinalOriginal]; cluster != AGRUP_ULTIMO; cluster = fat[cluster]){
 
-  //Atualizar Diretório
+    for(int sector = 0; sector < 8; sector++)
+    {
+        if(!bl_write((cluster*8 + sector), (char *) buffer + clustersEscritos*CLUSTERSIZE + sector*SECTORSIZE))
+        {
+            printf("Erro no carregamento do arquivo.\n");
+            return -1;
+        }
+    }
+    //Pulando o agrupamento escrito
+    buffer += CLUSTERSIZE;
+    clustersEscritos++;
+  }
 
-  //Salvando FAT no Disco
-  //Salvando Diretorio no Disco
+  //Atualizando tamanho do arquivo no diretório
+  dir[file].size+=size;
+
+  //Salvando estruturas no disco
+  //Salvando FAT
+  for(int cluster = 0; cluster < 32; cluster++)
+  {
+    for(int sector = 0; sector < 8; sector++)
+    {
+      char buffer[SECTORSIZE];
+      memcpy(buffer, ((char*) fat)+((cluster*8 + sector)*SECTORSIZE), SECTORSIZE);
+      bl_write((cluster*8 + sector), buffer);
+    }
+  }
+
+  //Salvando Diretório
+  for(int sector = 0; sector < 8; sector++)
+  {
+    char buffer[SECTORSIZE];
+    memcpy(buffer, ((char*) dir)+sector*SECTORSIZE, SECTORSIZE);
+    bl_write(sector + 32*8, buffer);
+
+  }
+
   return size;
 }
 
