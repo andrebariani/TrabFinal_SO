@@ -408,7 +408,6 @@ int fs_close(int file)  {
 }
 
 int fs_write(char *buffer, int size, int file) {
-  // printf("Função não implementada: fs_write\n");
 
   if(arquivos[file].estado==ARQ_ABERTO_LEITURA)
   {
@@ -440,7 +439,7 @@ int fs_write(char *buffer, int size, int file) {
   do{
       agrupAtual=fat[agrupAtual];
       tamFinal--;
-  }while (fat[agrupAtual]!=AGRUP_ULTIMO);
+  }while (agrupAtual!=AGRUP_ULTIMO);
 
   int agrupFinalOriginal = agrupAtual;
 
