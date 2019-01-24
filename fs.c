@@ -464,40 +464,39 @@ int fs_write(char *buffer, int size, int file) {
       agrupAtual=posFat;
       tamFinal--;
   }
-  
+
   //Escrevendo (EFETIVAMENTE) dados no disco
   //Carregando o primeiro setor a ser escrito
-  
+
   char bufferEscrita[SECTORSIZE];
   int escrito = 0;
   int agrup = agrupFinalOriginal;
   arquivos[file].posAtual = dir[file].size;
-  bl_read(agrupFinalOriginal*8 + (arquivos[file].posAtual / SECTORSIZE), bufferEscrita);
-  while(escrito < size && !arquivos[file].posAtual % SECTORSIZE)
+  bl_read(agrupFinalOriginal*8 + ((arquivos[file].posAtual / SECTORSIZE)%8), bufferEscrita);
+  while(escrito < size && escrito < SECTORSIZE)
   {
     bufferEscrita[arquivos[file].posAtual % SECTORSIZE] = buffer[escrito];
     escrito++;
     arquivos[file].posAtual++;
   }
-  
+  bl_write(agrup*8 + ((arquivos[file].posAtual / SECTORSIZE)%8), bufferEscrita);
+
   while(escrito < size)
   {
+    bufferEscrita[arquivos[file].posAtual % SECTORSIZE] = buffer[escrito];
+    escrito++;
+    arquivos[file].posAtual++;
+
     //Checando se acabou o setor
     if(!(arquivos[file].posAtual % SECTORSIZE))
     {
-      bl_write(agrup*8 + (arquivos[file].posAtual / SECTORSIZE), bufferEscrita);
+      bl_write(agrup*8 + ((arquivos[file].posAtual / SECTORSIZE)%8), bufferEscrita);
     }
-
     //Checando se acabou o agrupamento
     if(!(arquivos[file].posAtual % CLUSTERSIZE))
     {
       agrup = fat[agrup];
     }
-
-    bufferEscrita[arquivos[file].posAtual % SECTORSIZE] = buffer[escrito];
-    
-    escrito++;
-    arquivos[file].posAtual++;
   }
 
   //Atualizando tamanho do arquivo no diretório
