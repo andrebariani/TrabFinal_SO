@@ -464,55 +464,40 @@ int fs_write(char *buffer, int size, int file) {
       agrupAtual=posFat;
       tamFinal--;
   }
-
+  
   //Escrevendo (EFETIVAMENTE) dados no disco
-  //Carregando o ultimo agrupamento
-  char agrupBuffer[CLUSTERSIZE];
-
-  for(int sector = 0; sector < 8; sector++)
+  //Carregando o primeiro setor a ser escrito
+  
+  char bufferEscrita[SECTORSIZE];
+  int escrito = 0;
+  int agrup = agrupFinalOriginal;
+  arquivos[file].posAtual = dir[file].size;
+  bl_read(agrupFinalOriginal*8 + (arquivos[file].posAtual / SECTORSIZE), bufferEscrita);
+  while(escrito < size && !arquivos[file].posAtual % SECTORSIZE)
   {
-    if(!bl_read((agrupFinalOriginal*8 + sector), (char *) agrupBuffer + sector*SECTORSIZE))
-    {
-        printf("Erro no carregamento do arquivo.\n");
-        return -1;
-    }
+    bufferEscrita[arquivos[file].posAtual % SECTORSIZE] = buffer[escrito];
+    escrito++;
+    arquivos[file].posAtual++;
   }
-
-  printf("tam:%d\n", CLUSTERSIZE - (dir[file].size%CLUSTERSIZE));
-
-  //Copiando o inicio do agrupamento novo no final do lido
-  if(size>(CLUSTERSIZE - (dir[file].size%CLUSTERSIZE)))
-    memcpy(((char *) agrupBuffer)+(dir[file].size%CLUSTERSIZE),(char *) buffer, CLUSTERSIZE - (dir[file].size%CLUSTERSIZE));
-  else
-    memcpy(((char *) agrupBuffer)+(dir[file].size%CLUSTERSIZE),(char *) buffer, size);
-
-  printf("Agrupamento a ser escrito: %d\n", agrupFinalOriginal);
-  //Escrevendo o primeiro cluster
-  for(int sector = 0; sector < 8; sector++)
+  
+  while(escrito < size)
   {
-      if(!bl_write((agrupFinalOriginal*8 + sector), (char *) (agrupBuffer) + sector*SECTORSIZE))
-      {
-          printf("Erro na escrita do arquivo.\n");
-          return -1;
-      }
-  }
-  //Corrigindo ponteiro do buffer para apontar para o próximo agrupamento
-  buffer += (CLUSTERSIZE - (dir[file].size%CLUSTERSIZE));
-  int clustersEscritos=1;
-  //Escrevendo os demais clusters
-  for(int cluster = fat[agrupFinalOriginal]; cluster != AGRUP_ULTIMO; cluster = fat[cluster]){
-
-    for(int sector = 0; sector < 8; sector++)
+    //Checando se acabou o setor
+    if(!(arquivos[file].posAtual % SECTORSIZE))
     {
-        if(!bl_write((cluster*8 + sector), (char *) buffer + clustersEscritos*CLUSTERSIZE + sector*SECTORSIZE))
-        {
-            printf("Erro na escrita do arquivo.\n");
-            return -1;
-        }
+      bl_write(agrup*8 + (arquivos[file].posAtual / SECTORSIZE), bufferEscrita);
     }
-    //Pulando o agrupamento escrito
-    buffer += CLUSTERSIZE;
-    clustersEscritos++;
+
+    //Checando se acabou o agrupamento
+    if(!(arquivos[file].posAtual % CLUSTERSIZE))
+    {
+      agrup = fat[agrup];
+    }
+
+    bufferEscrita[arquivos[file].posAtual % SECTORSIZE] = buffer[escrito];
+    
+    escrito++;
+    arquivos[file].posAtual++;
   }
 
   //Atualizando tamanho do arquivo no diretório
@@ -539,7 +524,7 @@ int fs_write(char *buffer, int size, int file) {
 
   }
 
-  return size;
+  return escrito;
 }
 
 int fs_read(char *buffer, int size, int file) {
@@ -589,7 +574,7 @@ int fs_read(char *buffer, int size, int file) {
     lido++;
 
     //Checando se acabou o agrupamento
-    if(!(arquivos[lido].posAtual % CLUSTERSIZE))
+    if(!(arquivos[file].posAtual % CLUSTERSIZE))
     {
       agrup = fat[agrup];
     }
