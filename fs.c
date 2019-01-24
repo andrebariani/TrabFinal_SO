@@ -543,6 +543,10 @@ int fs_write(char *buffer, int size, int file) {
 }
 
 int fs_read(char *buffer, int size, int file) {
+  char bufferLeitura[SECTORSIZE];
+  int agrup = dir[file].first_block;
+  int tamanho, lido;
+
   printf("verificações... ");
   if(arquivos[file].estado==ARQ_ABERTO_ESCRITA)
   {
@@ -553,15 +557,9 @@ int fs_read(char *buffer, int size, int file) {
       printf("Erro: Arquivo nao foi aberto!\n");
       return -1;
   }
-  else if(dir[file].size % size != 0)
-  {
-    printf("Erro: size não aceito!\n");
-    return -1;
-  }
+
   printf("ok!\n");
   printf("tamanho... ");
-  int tamanho;
-  int tamInicial;
   if(size < dir[file].size-arquivos[file].posAtual)
   {
     tamanho = size;
@@ -571,52 +569,37 @@ int fs_read(char *buffer, int size, int file) {
     tamanho = dir[file].size-arquivos[file].posAtual;
   }
   printf("%d\n", tamanho);
-  tamInicial = tamanho;
   printf("ok!\n");
-  printf("agrupamentos... ");
-  int agrup = dir[file].first_block;
-  char bufferLeitura[SECTORSIZE];
-  while(tamanho > CLUSTERSIZE)
+
+  //Primeiro agrupamento a ser lido
+  for(int i = arquivos[file].posAtual; i > CLUSTERSIZE; i -= CLUSTERSIZE)
   {
-    for(int i = 0; i < 8; i++)
-    {
-      bl_read(agrup*8 + i, bufferLeitura); //buffer + (agrup*8 + i)*SECTORSIZE
-      for(int j = 0; j < SECTORSIZE; j++)
-      {
-        buffer[j + (agrup*8 + i)*SECTORSIZE] = bufferLeitura[j];
-      }
-    }
-    tamanho -= CLUSTERSIZE;
     agrup = fat[agrup];
   }
-  printf("ok!\n");
-  printf("setores... ");
 
-  int s=0;
-  while(tamanho > SECTORSIZE)
+  //Primeiro setor a ser lido
+  bl_read(agrup*8 + (arquivos[file].posAtual / SECTORSIZE), bufferLeitura);
+
+  //Leitura
+  lido = 0;
+  while(lido < tamanho && arquivos[file].posAtual < dir[file].size)
   {
-    bl_read(agrup * 8 + s, bufferLeitura ); //buffer+(agrup * 8 + s)*SECTORSIZE
-    for(int i = 0; i < SECTORSIZE; i++)
+    buffer[lido] = bufferLeitura[arquivos[file].posAtual % SECTORSIZE];
+    arquivos[file].posAtual++;
+    lido++;
+
+    //Checando se acabou o agrupamento
+    if(!(arquivos[lido].posAtual % CLUSTERSIZE))
     {
-      buffer[i + (agrup * 8 + s)*SECTORSIZE] = bufferLeitura[i];
+      agrup = fat[agrup];
     }
-    tamanho -= SECTORSIZE;
-    s++;
+
+    //Checando se acabou o setor
+    if(!(arquivos[file].posAtual % SECTORSIZE))
+    {
+      bl_read(agrup*8 + (arquivos[file].posAtual / SECTORSIZE), bufferLeitura);
+    }
   }
 
-  if(tamanho != 0)
-  {
-    bl_read(agrup * 8 + s, bufferLeitura );
-    for(int i = 0; i < tamanho; i++)
-    {
-      buffer[i + (agrup * 8 + s)*SECTORSIZE] = bufferLeitura[i];
-    }
-  }
-  
-
-  printf("ok!\n");
-
-  arquivos[file].posAtual+=tamInicial;
-
-  return tamInicial;
+  return lido;
 }
