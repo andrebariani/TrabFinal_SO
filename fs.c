@@ -575,12 +575,16 @@ int fs_read(char *buffer, int size, int file) {
   printf("ok!\n");
   printf("agrupamentos... ");
   int agrup = dir[file].first_block;
-
+  char bufferLeitura[SECTORSIZE];
   while(tamanho > CLUSTERSIZE)
   {
     for(int i = 0; i < 8; i++)
     {
-      bl_read(agrup*8 + i, buffer + (agrup*8 + i)*SECTORSIZE);
+      bl_read(agrup*8 + i, bufferLeitura); //buffer + (agrup*8 + i)*SECTORSIZE
+      for(int j = 0; j < SECTORSIZE; j++)
+      {
+        buffer[j + (agrup*8 + i)*SECTORSIZE] = bufferLeitura[j];
+      }
     }
     tamanho -= CLUSTERSIZE;
     agrup = fat[agrup];
@@ -591,10 +595,25 @@ int fs_read(char *buffer, int size, int file) {
   int s=0;
   while(tamanho > SECTORSIZE)
   {
-    bl_read(agrup * 8 + s, buffer+(agrup * 8 + s)*SECTORSIZE );
+    bl_read(agrup * 8 + s, bufferLeitura ); //buffer+(agrup * 8 + s)*SECTORSIZE
+    for(int i = 0; i < SECTORSIZE; i++)
+    {
+      buffer[i + (agrup * 8 + s)*SECTORSIZE] = bufferLeitura[i];
+    }
     tamanho -= SECTORSIZE;
     s++;
   }
+
+  if(tamanho != 0)
+  {
+    bl_read(agrup * 8 + s, bufferLeitura );
+    for(int i = 0; i < tamanho; i++)
+    {
+      buffer[i + (agrup * 8 + s)*SECTORSIZE] = bufferLeitura[i];
+    }
+  }
+  
+
   printf("ok!\n");
 
   arquivos[file].posAtual+=tamInicial;
