@@ -543,7 +543,7 @@ int fs_write(char *buffer, int size, int file) {
 }
 
 int fs_read(char *buffer, int size, int file) {
-
+  printf("verificações... ");
   if(arquivos[file].estado==ARQ_ABERTO_ESCRITA)
   {
       printf("Erro: Arquivo aberto para escrita!\n");
@@ -557,40 +557,47 @@ int fs_read(char *buffer, int size, int file) {
   {
     printf("Erro: size não aceito!\n");
     return -1;
-}
-
+  }
+  printf("ok!\n");
+  printf("tamanho... ");
   int tamanho;
   int tamInicial;
-  if(size < dir[file].size)
+  if(size < dir[file].size-arquivos[file].posAtual)
   {
     tamanho = size;
   }
   else
   {
-    tamanho = dir[file].size;
+    tamanho = dir[file].size-arquivos[file].posAtual;
   }
+  printf("%d\n", tamanho);
   tamInicial = tamanho;
-
+  printf("ok!\n");
+  printf("agrupamentos... ");
   int agrup = dir[file].first_block;
-  char bufferLeitura[CLUSTERSIZE];
+
   while(tamanho > CLUSTERSIZE)
   {
     for(int i = 0; i < 8; i++)
     {
-      bl_read(agrup*8 + i, bufferLeitura);
-      strcat(buffer, bufferLeitura);
+      bl_read(agrup*8 + i, buffer + (agrup*8 + i)*SECTORSIZE);
     }
     tamanho -= CLUSTERSIZE;
     agrup = fat[agrup];
   }
+  printf("ok!\n");
+  printf("setores... ");
 
+  int s=0;
   while(tamanho > SECTORSIZE)
   {
-    int i = 0;
-    bl_read(agrup * 8 + i, bufferLeitura);
-    strcat(buffer, bufferLeitura);
+    bl_read(agrup * 8 + s, buffer+(agrup * 8 + s)*SECTORSIZE );
     tamanho -= SECTORSIZE;
+    s++;
   }
+  printf("ok!\n");
 
-    return tamInicial;
+  arquivos[file].posAtual+=tamInicial;
+
+  return tamInicial;
 }
