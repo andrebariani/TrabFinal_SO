@@ -468,6 +468,7 @@ int fs_write(char *buffer, int size, int file) {
   //Escrevendo (EFETIVAMENTE) dados no disco
   //Carregando o ultimo agrupamento
   char agrupBuffer[CLUSTERSIZE];
+
   for(int sector = 0; sector < 8; sector++)
   {
     if(!bl_read((agrupFinalOriginal*8 + sector), (char *) agrupBuffer + sector*SECTORSIZE))
@@ -477,15 +478,21 @@ int fs_write(char *buffer, int size, int file) {
     }
   }
 
-  //Copiando o inicio do agrupamento novo no final do lido
-  memcpy((char *) agrupBuffer+(dir[file].size%CLUSTERSIZE),(char *) buffer, CLUSTERSIZE - (dir[file].size%CLUSTERSIZE));
+  printf("tam:%d\n", CLUSTERSIZE - (dir[file].size%CLUSTERSIZE));
 
+  //Copiando o inicio do agrupamento novo no final do lido
+  if(size>(CLUSTERSIZE - (dir[file].size%CLUSTERSIZE)))
+    memcpy(((char *) agrupBuffer)+(dir[file].size%CLUSTERSIZE),(char *) buffer, CLUSTERSIZE - (dir[file].size%CLUSTERSIZE));
+  else
+    memcpy(((char *) agrupBuffer)+(dir[file].size%CLUSTERSIZE),(char *) buffer, size);
+
+  printf("Agrupamento a ser escrito: %d\n", agrupFinalOriginal);
   //Escrevendo o primeiro cluster
   for(int sector = 0; sector < 8; sector++)
   {
-      if(!bl_write((agrupFinalOriginal*8 + sector), (char *) agrupBuffer + sector*SECTORSIZE))
+      if(!bl_write((agrupFinalOriginal*8 + sector), (char *) (agrupBuffer) + sector*SECTORSIZE))
       {
-          printf("Erro no carregamento do arquivo.\n");
+          printf("Erro na escrita do arquivo.\n");
           return -1;
       }
   }
@@ -499,7 +506,7 @@ int fs_write(char *buffer, int size, int file) {
     {
         if(!bl_write((cluster*8 + sector), (char *) buffer + clustersEscritos*CLUSTERSIZE + sector*SECTORSIZE))
         {
-            printf("Erro no carregamento do arquivo.\n");
+            printf("Erro na escrita do arquivo.\n");
             return -1;
         }
     }
@@ -550,7 +557,7 @@ int fs_read(char *buffer, int size, int file) {
   {
     printf("Erro: size não aceito!\n");
     return -1;
-  }
+}
 
   int tamanho;
   int tamInicial;
@@ -587,4 +594,3 @@ int fs_read(char *buffer, int size, int file) {
 
     return tamInicial;
 }
-

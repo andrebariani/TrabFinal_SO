@@ -1,0 +1,7 @@
+format
+create f1
+list
+copyf t.txt f1
+list
+remove f1
+exit
