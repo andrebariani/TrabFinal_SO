@@ -478,7 +478,6 @@ int fs_write(char *buffer, int size, int file) {
   bl_read(agrup*8 + setor, bufferEscrita);
 
   do {
-      printf("escrito: %d size:%d\n", escrito, size );
       //Enquanto houver o que escrever e espaço no setor
       while(escrito < size && byteSetor < SECTORSIZE){
           bufferEscrita[byteSetor] = buffer[escrito];
@@ -530,9 +529,8 @@ int fs_write(char *buffer, int size, int file) {
 int fs_read(char *buffer, int size, int file) {
   char bufferLeitura[SECTORSIZE];
   int agrup = dir[file].first_block;
-  int tamanho, lido;
+  int tamanho;
 
-  printf("verificações... ");
   if(arquivos[file].estado==ARQ_ABERTO_ESCRITA)
   {
       printf("Erro: Arquivo aberto para escrita!\n");
@@ -543,8 +541,6 @@ int fs_read(char *buffer, int size, int file) {
       return -1;
   }
 
-  printf("ok!\n");
-  printf("tamanho... ");
   if(size < dir[file].size-arquivos[file].posAtual)
   {
     tamanho = size;
@@ -553,8 +549,6 @@ int fs_read(char *buffer, int size, int file) {
   {
     tamanho = dir[file].size-arquivos[file].posAtual;
   }
-  printf("%d\n", tamanho);
-  printf("ok!\n");
 
   //Primeiro agrupamento a ser lido
   for(int i = arquivos[file].posAtual; i > CLUSTERSIZE; i -= CLUSTERSIZE)
@@ -562,46 +556,27 @@ int fs_read(char *buffer, int size, int file) {
     agrup = fat[agrup];
   }
 
-  //Primeiro setor a ser lido
-  bl_read(agrup*8 + (arquivos[file].posAtual / SECTORSIZE), bufferLeitura);
-
   //Leitura
-  lido = 0;
-  while(lido < tamanho && arquivos[file].posAtual < dir[file].size)
-  {
-    buffer[lido] = bufferLeitura[arquivos[file].posAtual % SECTORSIZE];
-    arquivos[file].posAtual++;
-    lido++;
+  int lido = 0;
+  int byteSetor = arquivos[file].posAtual % SECTORSIZE;
+  int setor = (arquivos[file].posAtual / SECTORSIZE) % 8;
 
-    //Checando se acabou o agrupamento
-    if(!(arquivos[file].posAtual % CLUSTERSIZE))
-    {
-      agrup = fat[agrup];
+  //Primeiro setor a ser lido
+  bl_read(agrup*8 + setor, bufferLeitura);
+
+  do {
+    //Enquanto houver o que ler e espaço no buffer
+    while(lido < tamanho && byteSetor < SECTORSIZE && arquivos[file].posAtual < dir[file].size){
+        buffer[lido]=bufferLeitura[byteSetor];
+        if(byteSetor==0){buffer[lido]='|';
+        printf("agrup: %dsetor: %dlido: %dposAtual: %d\n", agrup, setor, lido, arquivos[file].posAtual);
+        }
+        lido++;
+        byteSetor++;
+        arquivos[file].posAtual++;
     }
-
-    //Checando se acabou o setor
-    if(!(arquivos[file].posAtual % SECTORSIZE))
-    {
-      bl_read(agrup*8 + (arquivos[file].posAtual / SECTORSIZE), bufferLeitura);
-    }
-  }
-
-  return lido;
-}
-/*
-int byteSetor = dir[file].size % SECTORSIZE;
-int setor = (dir[file].size / SECTORSIZE) % 8;
-
-do {
-    //Enquanto houver o que escrever e espaço no setor
-    while(escrito < size && posSetor < SECTORSIZE){
-        bufferEscrita[posSetor] = buffer[escrito];
-        escrito++;
-        posSetor++;
-    }
-
-    //Escrevendo setor
-    bl_write(agrup*8 + setor, bufferEscrita);
+    //Lendo setor
+    bl_read(agrup*8 + setor, bufferLeitura);
 
     //Indexando proximo setor
     setor++;
@@ -610,6 +585,9 @@ do {
     if(setor==0){
         agrup=fat[agrup];
     }
+    byteSetor=0;
 
-} while(escrito < size);//Enquanto houver dados no Buffer
-*/
+    }while(lido < tamanho && arquivos[file].posAtual < dir[file].size);//Enquanto houver dados no Buffer
+
+  return lido;
+}
