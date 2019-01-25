@@ -323,8 +323,7 @@ int fs_remove(char *file_name) {
 }
 
 int fs_open(char *file_name, int mode) {
-  printf("fs_open\n");
-	//Testando tamanho do nome
+  //Testando tamanho do nome
   if(strlen(file_name)>24)
   {
 	printf("Erro: Nome de arquivo muito grande!\n");
@@ -338,9 +337,6 @@ int fs_open(char *file_name, int mode) {
 
 	if(mode == FS_R)
 	{
-        printf("In position %d\n", pos);
-        printf("dir: %c\n", dir[pos].used);
-        printf("arquivos: %c\n", arquivos[pos].estado);
 		//Leitura
 		if(pos==SIZE_DIR)
 		{
@@ -374,10 +370,6 @@ int fs_open(char *file_name, int mode) {
 
 		}
 
-        printf("In position %d\n", pos);
-        printf("dir: %c\n", dir[pos].used);
-        printf("arquivos: %c\n", arquivos[pos].estado);
-
 		if(arquivos[pos].estado==ARQ_FECHADO){
 			arquivos[pos].estado = ARQ_ABERTO_ESCRITA;
 			arquivos[pos].posAtual = 0;
@@ -393,8 +385,6 @@ int fs_open(char *file_name, int mode) {
 }
 
 int fs_close(int file)  {
-  printf("fs_close\n");
-
 	if(arquivos[file].estado==ARQ_FECHADO){
 		printf("Erro: Arquivo ja esta fechado!\n");
     	return 0;
@@ -568,8 +558,6 @@ int fs_read(char *buffer, int size, int file) {
     //Enquanto houver o que ler e espaço no buffer
     while(lido < tamanho && byteSetor < SECTORSIZE && arquivos[file].posAtual < dir[file].size){
         buffer[lido]=bufferLeitura[byteSetor];
-        if(byteSetor==0){//buffer[lido]='|';
-        printf("agrup: %dsetor: %dlido: %dposAtual: %d\n", agrup, setor, lido, arquivos[file].posAtual);
         }
         lido++;
         byteSetor++;
