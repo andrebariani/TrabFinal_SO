@@ -568,15 +568,13 @@ int fs_read(char *buffer, int size, int file) {
     //Enquanto houver o que ler e espaço no buffer
     while(lido < tamanho && byteSetor < SECTORSIZE && arquivos[file].posAtual < dir[file].size){
         buffer[lido]=bufferLeitura[byteSetor];
-        if(byteSetor==0){buffer[lido]='|';
+        if(byteSetor==0){//buffer[lido]='|';
         printf("agrup: %dsetor: %dlido: %dposAtual: %d\n", agrup, setor, lido, arquivos[file].posAtual);
         }
         lido++;
         byteSetor++;
         arquivos[file].posAtual++;
     }
-    //Lendo setor
-    bl_read(agrup*8 + setor, bufferLeitura);
 
     //Indexando proximo setor
     setor++;
@@ -586,6 +584,9 @@ int fs_read(char *buffer, int size, int file) {
         agrup=fat[agrup];
     }
     byteSetor=0;
+
+    //Lendo setor
+    bl_read(agrup*8 + setor, bufferLeitura);
 
     }while(lido < tamanho && arquivos[file].posAtual < dir[file].size);//Enquanto houver dados no Buffer
 
