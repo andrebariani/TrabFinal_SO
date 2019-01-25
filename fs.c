@@ -558,7 +558,6 @@ int fs_read(char *buffer, int size, int file) {
     //Enquanto houver o que ler e espaço no buffer
     while(lido < tamanho && byteSetor < SECTORSIZE && arquivos[file].posAtual < dir[file].size){
         buffer[lido]=bufferLeitura[byteSetor];
-        }
         lido++;
         byteSetor++;
         arquivos[file].posAtual++;
