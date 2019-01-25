@@ -414,18 +414,9 @@ int fs_write(char *buffer, int size, int file) {
   int tamFinal= dir[file].size + size;
 
    //Convertendo o tamanho em blocos
-  if(tamFinal % CLUSTERSIZE)
-  {
-      tamFinal = (tamFinal / CLUSTERSIZE) + 1;
-  }
-  else
-  {
-      tamFinal = tamFinal / CLUSTERSIZE;
-  }
+   tamFinal = tamFinal / CLUSTERSIZE;
 
   int agrupAtual = dir[file].first_block;
-
-  tamFinal--;
 
   //Pulando agrupamentos ja escritos
   while (fat[agrupAtual]!=AGRUP_ULTIMO) {
@@ -541,7 +532,7 @@ int fs_read(char *buffer, int size, int file) {
   }
 
   //Primeiro agrupamento a ser lido
-  for(int i = arquivos[file].posAtual; i > CLUSTERSIZE; i -= CLUSTERSIZE)
+  for(int i = arquivos[file].posAtual/CLUSTERSIZE; i > 0 ; i--)
   {
     agrup = fat[agrup];
   }
