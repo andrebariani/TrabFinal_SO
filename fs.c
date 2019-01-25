@@ -471,33 +471,34 @@ int fs_write(char *buffer, int size, int file) {
   char bufferEscrita[SECTORSIZE];
   int escrito = 0;
   int agrup = agrupFinalOriginal;
-  arquivos[file].posAtual = dir[file].size;
-  bl_read(agrupFinalOriginal*8 + ((arquivos[file].posAtual / SECTORSIZE)%8), bufferEscrita);
-  while(escrito < size && escrito < SECTORSIZE)
-  {
-    bufferEscrita[arquivos[file].posAtual % SECTORSIZE] = buffer[escrito];
-    escrito++;
-    arquivos[file].posAtual++;
-  }
-  bl_write(agrup*8 + ((arquivos[file].posAtual / SECTORSIZE)%8), bufferEscrita);
+  int byteSetor = dir[file].size % SECTORSIZE;
+  int setor = (dir[file].size / SECTORSIZE) % 8;
 
-  while(escrito < size)
-  {
-    bufferEscrita[arquivos[file].posAtual % SECTORSIZE] = buffer[escrito];
-    escrito++;
-    arquivos[file].posAtual++;
+  //Ler ultimo agrupamento original
+  bl_read(agrup*8 + setor, bufferEscrita);
 
-    //Checando se acabou o setor
-    if(!(arquivos[file].posAtual % SECTORSIZE))
-    {
-      bl_write(agrup*8 + ((arquivos[file].posAtual / SECTORSIZE)%8), bufferEscrita);
-    }
-    //Checando se acabou o agrupamento
-    if(!(arquivos[file].posAtual % CLUSTERSIZE))
-    {
-      agrup = fat[agrup];
-    }
-  }
+  do {
+      printf("escrito: %d size:%d\n", escrito, size );
+      //Enquanto houver o que escrever e espaço no setor
+      while(escrito < size && byteSetor < SECTORSIZE){
+          bufferEscrita[byteSetor] = buffer[escrito];
+          escrito++;
+          byteSetor++;
+      }
+
+      //Escrevendo setor
+      bl_write(agrup*8 + setor, bufferEscrita);
+
+      //Indexando proximo setor
+      setor++;
+      setor=setor%8;
+      //Se acabou o agrupamento
+      if(setor==0){
+          agrup=fat[agrup];
+      }
+      byteSetor=0;
+
+  } while(escrito < size);//Enquanto houver dados no Buffer
 
   //Atualizando tamanho do arquivo no diretório
   dir[file].size+=size;
@@ -587,3 +588,28 @@ int fs_read(char *buffer, int size, int file) {
 
   return lido;
 }
+/*
+int byteSetor = dir[file].size % SECTORSIZE;
+int setor = (dir[file].size / SECTORSIZE) % 8;
+
+do {
+    //Enquanto houver o que escrever e espaço no setor
+    while(escrito < size && posSetor < SECTORSIZE){
+        bufferEscrita[posSetor] = buffer[escrito];
+        escrito++;
+        posSetor++;
+    }
+
+    //Escrevendo setor
+    bl_write(agrup*8 + setor, bufferEscrita);
+
+    //Indexando proximo setor
+    setor++;
+    setor=setor%8;
+    //Se acabou o agrupamento
+    if(setor==0){
+        agrup=fat[agrup];
+    }
+
+} while(escrito < size);//Enquanto houver dados no Buffer
+*/
